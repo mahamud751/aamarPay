@@ -1,0 +1,124 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String       @id @default(uuid())
+  name          String
+  email         String       @unique
+  phone         String?
+  referralCode  String?
+  gender        Gender       @default(Other)
+  password      String?
+  address       String?
+  role          UserRole     @default(user)
+  branchId      String?
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+  photos        Json[]       @default([])
+  status        UserStatus   @default(active)
+  lastVisited   String[]     @default([])
+  provider      String?
+  providerId    String?
+  permissions   Permission[] @relation("UserPermissions")
+  accounts      Account[]    @relation("UserAccounts")
+  events        Event[]      @relation("UserEvents")
+  notifications Notification[] @relation("UserNotifications")
+
+  @@index([email])
+}
+
+model Account {
+  id                String   @id @default(uuid())
+  userId            String
+  provider          String
+  providerAccountId String
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+  user              User     @relation("UserAccounts", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@index([userId])
+}
+
+model Notification {
+  id        String   @id @default(uuid())
+  userId    String?
+  userEmail String
+  user      User?    @relation("UserNotifications", fields: [userId], references: [id])
+  message   String
+  status    String   @default("unread")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Permission {
+  id        String   @id @default(uuid())
+  name      String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  users     User[]   @relation("UserPermissions")
+}
+
+model AuditLog {
+  id         String   @id @default(uuid())
+  entityId   String
+  entityType String
+  action     String
+  oldValue   Json?
+  newValue   Json?
+  timestamp  DateTime @default(now())
+}
+
+model Event {
+  id            String   @id @default(uuid())
+  title         String
+  description   String
+  date          DateTime
+  location      String
+  category      Category
+  isUserCreated Boolean  @default(true)
+  rsvpCount     Int      @default(0)
+  userId        String?
+  user          User?    @relation("UserEvents", fields: [userId], references: [id], onDelete: SetNull)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+enum Category {
+  Conference
+  Workshop
+  Meetup
+}
+
+enum Gender {
+  Male
+  Female
+  Other
+}
+
+enum UserRole {
+  superAdmin
+  admin
+  user
+  manager
+  vendor
+  schoolManager
+  rider
+  b2bManager
+}
+
+enum UserStatus {
+  active
+  deactive
+  blocked
+}
