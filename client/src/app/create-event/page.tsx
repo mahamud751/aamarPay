@@ -11,8 +11,10 @@ export default function CreateEvent() {
   };
 
   return (
-    <div>
-      <h2 className="text-3xl font-bold mb-4">Create New Event</h2>
+    <div className="max-w-7xl mx-auto p-6">
+      <h2 className="text-3xl font-bold mb-6 text-gray-800">
+        Create New Event
+      </h2>
       <EventForm onSubmitSuccess={handleSubmit} />
     </div>
   );
