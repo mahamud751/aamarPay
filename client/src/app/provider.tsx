@@ -11,10 +11,8 @@ export default function Providers({ children }: { children: React.ReactNode }) {
       {" "}
       <UserProvider>
         <EventsProvider>
-          <div>
-            <Header />
-            {children}
-          </div>
+          <Header />
+          <div className="mt-20">{children}</div>
         </EventsProvider>
       </UserProvider>
     </SessionWraper>

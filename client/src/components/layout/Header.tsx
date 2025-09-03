@@ -2,12 +2,31 @@
 
 import Link from "next/link";
 import { useAuth } from "@/contexts/hooks/auth";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import {
+  FaHome,
+  FaPlus,
+  FaCalendarAlt,
+  FaUser,
+  FaSignOutAlt,
+  FaSignInAlt,
+  FaTimes,
+} from "react-icons/fa";
 import AuthForm from "@/components/templates/AuthForm";
 
 export default function Header() {
   const { user, logoutUser } = useAuth();
   const [showAuthForm, setShowAuthForm] = useState(false);
+  const [isScrolled, setIsScrolled] = useState(false);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      setIsScrolled(window.scrollY > 10);
+    };
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
 
   const handleLogout = () => {
     logoutUser();
@@ -21,66 +40,180 @@ export default function Header() {
     setShowAuthForm(false);
   };
 
+  // Animation variants
+  const navItemVariants = {
+    hidden: { opacity: 0, y: -20 },
+    visible: { opacity: 1, y: 0 },
+  };
+
+  const authFormVariants = {
+    hidden: { opacity: 0, scale: 0.8 },
+    visible: { opacity: 1, scale: 1 },
+    exit: { opacity: 0, scale: 0.8 },
+  };
+
   return (
-    <header className="bg-blue-600 text-white p-4 relative">
-      <nav className="container mx-auto flex justify-between items-center">
-        <h1 className="text-2xl font-bold">Event Management</h1>
-        <ul className="flex space-x-4 items-center">
-          <li>
-            <Link href="/" className="hover:underline">
-              Home
+    <motion.header
+      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
+        isScrolled
+          ? "bg-white bg-opacity-90 backdrop-blur-md shadow-lg py-2"
+          : "bg-gradient-to-r from-indigo-600 to-purple-600 py-4"
+      }`}
+      initial={{ y: -100 }}
+      animate={{ y: 0 }}
+      transition={{ type: "spring", stiffness: 120, damping: 20 }}
+    >
+      <nav className="container mx-auto flex justify-between items-center px-4">
+        <motion.div
+          initial={{ opacity: 0, x: -20 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ delay: 0.1 }}
+        >
+          <Link href="/" className="flex items-center space-x-2">
+            <motion.div
+              whileHover={{ rotate: 360 }}
+              transition={{ duration: 0.5 }}
+              className="bg-white p-2 rounded-full"
+            >
+              <FaCalendarAlt className="text-indigo-600 text-xl" />
+            </motion.div>
+            <span
+              className={`text-xl font-bold ${
+                isScrolled ? "text-indigo-600" : "text-white"
+              }`}
+            >
+              EventHub
+            </span>
+          </Link>
+        </motion.div>
+
+        <motion.ul
+          className="flex space-x-1 md:space-x-4 items-center"
+          initial="hidden"
+          animate="visible"
+          transition={{ staggerChildren: 0.1 }}
+        >
+          <motion.li variants={navItemVariants}>
+            <Link
+              href="/"
+              className={`flex items-center space-x-1 px-3 py-2 rounded-lg transition-all duration-300 ${
+                isScrolled
+                  ? "text-indigo-600 hover:bg-indigo-100 hover:text-indigo-700"
+                  : "text-white hover:bg-indigo-500 hover:bg-opacity-30"
+              }`}
+            >
+              <FaHome />
+              <span className="hidden md:inline">Home</span>
             </Link>
-          </li>
+          </motion.li>
+
           {user && (
             <>
-              <li>
-                <Link href="/create-event" className="hover:underline">
-                  Create Event
+              <motion.li variants={navItemVariants}>
+                <Link
+                  href="/create-event"
+                  className={`flex items-center space-x-1 px-3 py-2 rounded-lg transition-all duration-300 ${
+                    isScrolled
+                      ? "text-indigo-600 hover:bg-indigo-100 hover:text-indigo-700"
+                      : "text-white hover:bg-indigo-500 hover:bg-opacity-30"
+                  }`}
+                >
+                  <FaPlus />
+                  <span className="hidden md:inline">Create</span>
                 </Link>
-              </li>
-              <li>
-                <Link href="/my-events" className="hover:underline">
-                  My Events
+              </motion.li>
+              <motion.li variants={navItemVariants}>
+                <Link
+                  href="/my-events"
+                  className={`flex items-center space-x-1 px-3 py-2 rounded-lg transition-all duration-300 ${
+                    isScrolled
+                      ? "text-indigo-600 hover:bg-indigo-100 hover:text-indigo-700"
+                      : "text-white hover:bg-indigo-500 hover:bg-opacity-30"
+                  }`}
+                >
+                  <FaUser />
+                  <span className="hidden md:inline">My Events</span>
                 </Link>
-              </li>
+              </motion.li>
             </>
           )}
-          <li>
+
+          <motion.li variants={navItemVariants}>
             {user ? (
-              <div className="flex items-center space-x-4">
-                <span className="hidden md:inline">Hi, {user.name}</span>
-                <button
-                  onClick={handleLogout}
-                  className="bg-white text-blue-600 px-4 py-2 rounded-md hover:bg-gray-100 transition-colors"
-                >
-                  Logout
-                </button>
-              </div>
-            ) : (
-              <button
-                onClick={toggleAuthForm}
-                className="bg-white text-blue-600 px-4 py-2 rounded-md hover:bg-gray-100 transition-colors"
+              <motion.div
+                className="flex items-center space-x-2"
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
               >
-                Login
-              </button>
+                <span
+                  className={`hidden md:inline font-medium ${
+                    isScrolled ? "text-indigo-600" : "text-white"
+                  }`}
+                >
+                  Hi, {user.name}
+                </span>
+                <motion.button
+                  onClick={handleLogout}
+                  className={`flex items-center space-x-1 px-4 py-2 rounded-lg transition-all duration-300 ${
+                    isScrolled
+                      ? "bg-indigo-600 text-white hover:bg-indigo-700"
+                      : "bg-white text-indigo-600 hover:bg-gray-100"
+                  }`}
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                >
+                  <FaSignOutAlt />
+                  <span className="hidden md:inline">Logout</span>
+                </motion.button>
+              </motion.div>
+            ) : (
+              <motion.button
+                onClick={toggleAuthForm}
+                className={`flex items-center space-x-1 px-4 py-2 rounded-lg transition-all duration-300 ${
+                  isScrolled
+                    ? "bg-indigo-600 text-white hover:bg-indigo-700"
+                    : "bg-white text-indigo-600 hover:bg-gray-100"
+                }`}
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+              >
+                <FaSignInAlt />
+                <span className="hidden md:inline">Login</span>
+              </motion.button>
             )}
-          </li>
-        </ul>
+          </motion.li>
+        </motion.ul>
       </nav>
 
-      {showAuthForm && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="relative">
-            <button
-              onClick={closeAuthForm}
-              className="absolute top-2 right-2 text-gray-500 hover:text-gray-700 text-2xl font-bold"
+      <AnimatePresence>
+        {showAuthForm && (
+          <motion.div
+            className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+          >
+            <motion.div
+              className="relative"
+              variants={authFormVariants}
+              initial="hidden"
+              animate="visible"
+              exit="exit"
+              transition={{ type: "spring", damping: 25, stiffness: 500 }}
             >
-              &times;
-            </button>
-            <AuthForm onClose={closeAuthForm} />
-          </div>
-        </div>
-      )}
-    </header>
+              <motion.button
+                onClick={closeAuthForm}
+                className="absolute -top-4 -right-4 bg-white text-gray-500 hover:text-gray-700 rounded-full p-2 shadow-lg"
+                whileHover={{ scale: 1.1 }}
+                whileTap={{ scale: 0.9 }}
+              >
+                <FaTimes className="h-5 w-5" />
+              </motion.button>
+              <AuthForm onClose={closeAuthForm} />
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </motion.header>
   );
 }
