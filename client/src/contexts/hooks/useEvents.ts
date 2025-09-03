@@ -3,7 +3,7 @@
 
 import { useState, useEffect } from "react";
 import { v4 as uuidv4 } from "uuid";
-import { Event } from "@/services/types/Types";
+import { Event, Category } from "@/services/types/Types";
 
 export const useEvents = () => {
   const [events, setEvents] = useState<Event[]>([]);
@@ -15,6 +15,7 @@ export const useEvents = () => {
       if (stored) {
         setEvents(JSON.parse(stored));
       } else {
+        const now = new Date().toISOString();
         const mockEvents: Event[] = [
           {
             id: uuidv4(),
@@ -22,9 +23,11 @@ export const useEvents = () => {
             description: "Annual tech gathering.",
             date: "2025-10-01",
             location: "New York",
-            category: "Conference",
+            category: Category.Conference,
             isUserCreated: false,
             rsvpCount: 0,
+            createdAt: now,
+            updatedAt: now,
           },
           {
             id: uuidv4(),
@@ -32,9 +35,11 @@ export const useEvents = () => {
             description: "Hands-on AI session.",
             date: "2025-09-15",
             location: "San Francisco",
-            category: "Workshop",
+            category: Category.Workshop,
             isUserCreated: false,
             rsvpCount: 0,
+            createdAt: now,
+            updatedAt: now,
           },
           {
             id: uuidv4(),
@@ -42,9 +47,11 @@ export const useEvents = () => {
             description: "Casual meetup for devs.",
             date: "2025-11-05",
             location: "Austin",
-            category: "Meetup",
+            category: Category.Social,
             isUserCreated: false,
             rsvpCount: 0,
+            createdAt: now,
+            updatedAt: now,
           },
         ];
         setEvents(mockEvents);
@@ -56,11 +63,14 @@ export const useEvents = () => {
   const addEvent = (
     newEvent: Omit<Event, "id" | "isUserCreated" | "rsvpCount">
   ) => {
+    const now = new Date().toISOString();
     const event: Event = {
       ...newEvent,
       id: uuidv4(),
       isUserCreated: true,
       rsvpCount: 0,
+      createdAt: now,
+      updatedAt: now,
     };
     const updated = [...events, event];
     setEvents(updated);
@@ -71,7 +81,9 @@ export const useEvents = () => {
 
   const updateEvent = (updatedEvent: Event) => {
     const updated = events.map((e) =>
-      e.id === updatedEvent.id ? updatedEvent : e
+      e.id === updatedEvent.id
+        ? { ...updatedEvent, updatedAt: new Date().toISOString() }
+        : e
     );
     setEvents(updated);
     if (typeof window !== "undefined") {
@@ -89,7 +101,13 @@ export const useEvents = () => {
 
   const rsvpEvent = (id: string) => {
     const updated = events.map((e) =>
-      e.id === id ? { ...e, rsvpCount: e.rsvpCount + 1 } : e
+      e.id === id
+        ? {
+            ...e,
+            rsvpCount: e.rsvpCount + 1,
+            updatedAt: new Date().toISOString(),
+          }
+        : e
     );
     setEvents(updated);
     if (typeof window !== "undefined") {

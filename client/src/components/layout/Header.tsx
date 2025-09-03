@@ -34,12 +34,12 @@ export default function Header() {
           {user && (
             <>
               <li>
-                <Link href="/events/new" className="hover:underline">
+                <Link href="/create-event" className="hover:underline">
                   Create Event
                 </Link>
               </li>
               <li>
-                <Link href="/events/my-events" className="hover:underline">
+                <Link href="/my-events" className="hover:underline">
                   My Events
                 </Link>
               </li>

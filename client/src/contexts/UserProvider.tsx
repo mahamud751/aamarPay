@@ -12,39 +12,19 @@ import Swal from "sweetalert2";
 import Cookies from "js-cookie";
 import { useRouter } from "next/navigation";
 import { useSession, signIn, signOut } from "next-auth/react";
-import { Session } from "next-auth";
-import { Gender, User, UserRole, UserStatus } from "@/services/types/Types";
+import { User } from "../types/types";
 
-// Extend the Session type to include our custom properties
-interface ExtendedSession extends Session {
-  user: {
-    id?: string;
-    name?: string; // Removed null from union type to match Session type
-    email?: string; // Removed null from union type to match Session type
-    image?: string; // Removed null from union type to match Session type
-    role?: string;
-    photos?: any[];
-  };
-  accessToken?: string;
-}
-
-// Utility function to normalize and validate redirect URL
+// 🔹 Utility to normalize redirect URL
 const normalizeRedirectUrl = (url?: string): string => {
-  // Default to "/" if no URL is provided
   if (!url) return "/";
-
-  // If the URL is an absolute URL, extract the pathname
   try {
     const parsedUrl = new URL(url, window.location.origin);
-    // Only allow redirects to the same origin
     if (parsedUrl.origin !== window.location.origin) {
       console.warn("Invalid redirect URL: External domains are not allowed.");
       return "/";
     }
-    // Return the pathname (e.g., "/dashboard")
     return parsedUrl.pathname || "/";
   } catch {
-    // If URL parsing fails, assume it's a relative path and ensure it starts with "/"
     return url.startsWith("/") ? url : `/${url}`;
   }
 };
@@ -81,6 +61,8 @@ export const UserProvider: FC<UserProviderProps> = ({ children }) => {
   const MySwal = withReactContent(Swal);
   const router = useRouter();
   const { data: session, status } = useSession();
+
+  // Hydrate from localStorage first
   const [user, setUser] = useState<User | null>(() => {
     if (typeof window !== "undefined") {
       const storedUser = localStorage.getItem("user");
@@ -88,65 +70,67 @@ export const UserProvider: FC<UserProviderProps> = ({ children }) => {
     }
     return null;
   });
+
   const [token, setToken] = useState<string | null>(() => {
     if (typeof window !== "undefined") {
       return localStorage.getItem("token") || null;
     }
     return null;
   });
+
   const [loading, setLoading] = useState<boolean>(false);
+  const [isInitialized, setIsInitialized] = useState<boolean>(false);
 
+  // 🔹 Sync with NextAuth session
   useEffect(() => {
-    if (status === "authenticated" && session) {
-      // Cast session to our extended type
-      const extendedSession = session as ExtendedSession;
+    if (!isInitialized) {
+      setIsInitialized(true);
+      return;
+    }
 
-      setUser({
-        id: extendedSession.user?.id || "",
-        name: extendedSession.user?.name || "Unknown",
-        email: extendedSession.user?.email || "",
-        phone: null,
-        referralCode: null,
-        gender: Gender.Other,
-        password: null,
-        address: null,
-        role: (extendedSession.user?.role as UserRole) || UserRole.user,
-        branchId: null,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-        status: UserStatus.active,
-        photos: extendedSession.user?.photos || [],
-        lastVisited: [],
-        provider: null,
-        providerId: null,
-      });
-      setToken(extendedSession.accessToken || null);
+    if (status === "authenticated" && session?.user) {
+      const sessionUser: User = {
+        id: session.user.id || "",
+        name: session.user.name || "Unknown",
+        email: session.user.email || "",
+        role: session.user.role || "user",
+        photos: session.user.photos || [],
+      };
+
+      const sessionToken = session.accessToken || null;
+
+      setUser(sessionUser);
+      setToken(sessionToken);
+
       if (typeof window !== "undefined") {
-        localStorage.setItem("user", JSON.stringify(user));
-        localStorage.setItem("token", extendedSession.accessToken || "");
-        Cookies.set("authToken", extendedSession.accessToken || "", {
-          expires: 1,
-          path: "/",
-        });
+        localStorage.setItem("user", JSON.stringify(sessionUser));
+        if (sessionToken) localStorage.setItem("token", sessionToken);
+        Cookies.set("authToken", sessionToken || "", { expires: 1, path: "/" });
       }
     } else if (status === "unauthenticated") {
-      setUser(null);
-      setToken(null);
-      if (typeof window !== "undefined") {
-        localStorage.removeItem("user");
-        localStorage.removeItem("token");
-        Cookies.remove("authToken");
+      // 🔥 Only clear if there's no valid token in localStorage
+      const storedToken = localStorage.getItem("token");
+      if (!storedToken) {
+        setUser(null);
+        setToken(null);
+        if (typeof window !== "undefined") {
+          localStorage.removeItem("user");
+          localStorage.removeItem("token");
+          Cookies.remove("authToken");
+        }
       }
     }
-  }, [session, status]);
+  }, [session, status, isInitialized]);
 
+  // 🔹 Keep localStorage in sync if user or token changes
   useEffect(() => {
     if (typeof window !== "undefined" && user && token) {
       localStorage.setItem("user", JSON.stringify(user));
-      localStorage.setItem("token", token || "");
+      localStorage.setItem("token", token);
     }
   }, [user, token]);
 
+  // 🔹 Login handler
   const loginUser = async (
     email: string,
     password: string,
@@ -156,36 +140,32 @@ export const UserProvider: FC<UserProviderProps> = ({ children }) => {
     try {
       const response = await axios.post(
         `${process.env.NEXT_PUBLIC_API_BASE_URL}/users/login`,
-        {
-          email,
-          password,
-        }
+        { email, password }
       );
+
       if (response.status === 201) {
         const { user, token } = response.data;
         setUser(user);
         setToken(token);
         Cookies.set("authToken", token, { expires: 1, path: "/" });
-        // Normalize redirect URL before pushing
-        const normalizedUrl = normalizeRedirectUrl(redirectUrl);
-        router.push(normalizedUrl);
+        router.push(normalizeRedirectUrl(redirectUrl));
       } else {
         throw new Error("Invalid email or password");
       }
     } catch (error: any) {
-      const errorMessage =
-        error.response?.data?.message ||
-        "An error occurred. Please try again later.";
       MySwal.fire({
         icon: "error",
         title: "Login Error",
-        text: errorMessage,
+        text:
+          error.response?.data?.message ||
+          "An error occurred. Please try again later.",
       });
     } finally {
       setLoading(false);
     }
   };
 
+  // 🔹 Register handler
   const registerUser = async (
     name: string,
     email: string,
@@ -197,44 +177,37 @@ export const UserProvider: FC<UserProviderProps> = ({ children }) => {
     try {
       const response = await axios.post(
         `${process.env.NEXT_PUBLIC_API_BASE_URL}/users/register`,
-        {
-          name,
-          email,
-          phone,
-          password,
-        }
+        { name, email, phone, password }
       );
+
       if (response.status === 201) {
         const { user, token } = response.data;
         setUser(user);
         setToken(token);
         Cookies.set("authToken", token, { expires: 1, path: "/" });
-        // Normalize redirect URL before pushing
-        const normalizedUrl = normalizeRedirectUrl(redirectUrl);
-        router.push(normalizedUrl);
+        router.push(normalizeRedirectUrl(redirectUrl));
       } else {
         throw new Error("Registration failed");
       }
     } catch (error: any) {
-      const errorMessage =
-        error.response?.data?.message ||
-        "An error occurred. Please try again later.";
       MySwal.fire({
         icon: "error",
         title: "Registration Error",
-        text: errorMessage,
+        text:
+          error.response?.data?.message ||
+          "An error occurred. Please try again later.",
       });
     } finally {
       setLoading(false);
     }
   };
 
+  // 🔹 Google Sign In
   const googleSignIn = (redirectUrl?: string) => {
-    // Normalize redirect URL before passing to signIn
-    const normalizedUrl = normalizeRedirectUrl(redirectUrl);
-    signIn("google", { callbackUrl: normalizedUrl });
+    signIn("google", { callbackUrl: normalizeRedirectUrl(redirectUrl) });
   };
 
+  // 🔹 Logout
   const logoutUser = () => {
     signOut({ callbackUrl: "/" });
     setUser(null);

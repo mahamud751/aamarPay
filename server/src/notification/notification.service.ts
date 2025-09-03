@@ -55,6 +55,12 @@ export class NotificationService {
       };
     }
 
+    // Validate email format for individual notifications
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(userEmail)) {
+      throw new NotFoundException(`Invalid email format: ${userEmail}`);
+    }
+
     const user = await this.prisma.user.findUnique({
       where: { email: userEmail },
     });

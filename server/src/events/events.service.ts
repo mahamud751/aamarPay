@@ -34,31 +34,43 @@ export class EventsService {
   }
 
   async create(createEventDto: CreateEventDto, user: any) {
-    const canCreate =
-      (await this.checkPermission(user, 'event.create')) ||
-      [UserRole.superAdmin, UserRole.admin].includes(user.role);
-    if (!canCreate) {
-      throw new UnauthorizedException('Unauthorized to create events');
+    try {
+      // Validate user object
+      if (!user || !user.userId) {
+        throw new UnauthorizedException('User not authenticated');
+      }
+
+      const event = await this.prisma.event.create({
+        data: {
+          ...createEventDto,
+          date: new Date(createEventDto.date),
+          userId: user.userId,
+          isUserCreated: true,
+        },
+        include: { user: { select: { id: true, name: true, email: true } } },
+      });
+
+      // Only send notification if userEmail exists
+      if (user.email) {
+        try {
+          await this.notificationService.createNotification({
+            userEmail: 'all',
+            message: `New event created: ${event.title} by ${user.email}`,
+          });
+        } catch (notificationError) {
+          // Log notification error but don't fail the event creation
+          console.error('Failed to send notification:', notificationError);
+        }
+      }
+
+      await this.auditLogService.log(event.id, 'Event', 'CREATE', null, event);
+
+      return { message: 'Event created successfully', event };
+    } catch (error) {
+      // Log the actual error for debugging
+      console.error('Error creating event:', error);
+      throw error;
     }
-
-    const event = await this.prisma.event.create({
-      data: {
-        ...createEventDto,
-        date: new Date(createEventDto.date),
-        userId: user.userId,
-        isUserCreated: true,
-      },
-      include: { user: { select: { id: true, name: true, email: true } } },
-    });
-
-    await this.notificationService.createNotification({
-      userEmail: 'all',
-      message: `New event created: ${event.title} by ${user.email}`,
-    });
-
-    await this.auditLogService.log(event.id, 'Event', 'CREATE', null, event);
-
-    return { message: 'Event created successfully', event };
   }
 
   async findAll() {

@@ -23,7 +23,7 @@ export const getUserEvents = async (): Promise<EventsResponse> => {
   return response.data;
 };
 
-export const getEvent = async (id: string): Promise<EventResponse> => {
+export const getEvent = async (id: string): Promise<Event> => {
   const response = await API.get(`/events/${id}`);
   return response.data;
 };
