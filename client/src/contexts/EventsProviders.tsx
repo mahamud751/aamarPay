@@ -17,6 +17,7 @@ import {
   deleteEvent as deleteEventApi,
 } from "@/services/apis/events";
 import { Event } from "@/services/types/Types";
+import { useAuth } from "@/contexts/hooks/auth";
 
 const MySwal = withReactContent(Swal);
 
@@ -45,6 +46,7 @@ interface EventsProviderProps {
 export const EventsProvider: React.FC<EventsProviderProps> = ({ children }) => {
   const [events, setEvents] = useState<Event[]>([]);
   const [loading, setLoading] = useState(false);
+  const { user } = useAuth();
 
   const fetchEvents = useCallback(async (fetchUserEvents: boolean) => {
     setLoading(true);
@@ -64,21 +66,43 @@ export const EventsProvider: React.FC<EventsProviderProps> = ({ children }) => {
     }
   }, []);
 
-  const rsvpEvent = useCallback(async (id: string) => {
-    try {
-      const response = await rsvpEventApi(id);
-      // Update the event in the state with the new RSVP count
-      setEvents((prevEvents) =>
-        prevEvents.map((event) => (event.id === id ? response.event : event))
-      );
-    } catch (err: any) {
-      MySwal.fire({
-        icon: "error",
-        title: "Error",
-        text: err.response?.data?.message || "Failed to RSVP to event",
-      });
-    }
-  }, []);
+  const rsvpEvent = useCallback(
+    async (id: string) => {
+      // Check if user is authenticated
+      if (!user) {
+        MySwal.fire({
+          icon: "warning",
+          title: "Login Required",
+          text: "You need to be logged in to RSVP to events.",
+        });
+        return;
+      }
+
+      try {
+        const response = await rsvpEventApi(id);
+        // Update the event in the state with the new RSVP count
+        setEvents((prevEvents) =>
+          prevEvents.map((event) => (event.id === id ? response.event : event))
+        );
+      } catch (err: any) {
+        // Handle authentication errors specifically
+        if (err.response?.status === 401) {
+          MySwal.fire({
+            icon: "error",
+            title: "Authentication Error",
+            text: "Your session has expired. Please log in again.",
+          });
+        } else {
+          MySwal.fire({
+            icon: "error",
+            title: "Error",
+            text: err.response?.data?.message || "Failed to RSVP to event",
+          });
+        }
+      }
+    },
+    [user]
+  );
 
   const deleteEvent = useCallback(async (id: string) => {
     try {

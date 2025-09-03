@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion"; // Add motion for animations
+import Link from "next/link";
 
 import EventCard from "@/components/EventCard";
 import { Event } from "@/services/types/Types";
@@ -36,24 +37,28 @@ export default function MyEvents() {
   };
 
   return (
-    <div className="min-h-screen py-8">
+    <div className="max-w-7xl mx-auto p-6">
       {/* Beautiful Header with Gradient */}
       <motion.div
-        className="bg-gradient-to-r from-blue-500 to-purple-600 rounded-2xl p-8 mb-10 text-white shadow-xl"
-        initial={{ opacity: 0, y: -20 }}
+        className="bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-500 rounded-3xl p-8 mb-10 text-white shadow-2xl"
+        initial={{ opacity: 0, y: -30 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
+        transition={{ duration: 0.6 }}
+        whileHover={{
+          scale: 1.01,
+          transition: { duration: 0.3 },
+        }}
       >
         <motion.h1
-          className="text-4xl font-bold mb-2"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.2 }}
+          className="text-4xl md:text-5xl font-bold mb-4 text-center"
+          initial={{ opacity: 0, scale: 0.8 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ delay: 0.2, type: "spring", stiffness: 200 }}
         >
           My Events
         </motion.h1>
         <motion.p
-          className="text-xl opacity-90"
+          className="text-2xl opacity-90 text-center mb-6"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.3 }}
@@ -61,83 +66,97 @@ export default function MyEvents() {
           Manage and organize your events
         </motion.p>
         <motion.div
-          className="mt-4 flex items-center"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
+          className="mt-6 flex justify-center items-center"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.4 }}
         >
-          <span className="bg-white bg-opacity-20 px-3 py-1 rounded-full text-sm">
-            {userEvents?.length || 0} Events
+          <span className="bg-white bg-opacity-20 backdrop-blur-sm px-4 py-2 rounded-full text-lg font-medium">
+            {userEvents?.length || 0} Events Created
           </span>
         </motion.div>
       </motion.div>
 
       {loading ? (
-        <div className="flex justify-center py-12">
-          <svg
-            className="animate-spin h-12 w-12 text-blue-500"
-            xmlns="http://www.w3.org/2000/svg"
-            fill="none"
-            viewBox="0 0 24 24"
-          >
-            <circle
-              className="opacity-25"
-              cx="12"
-              cy="12"
-              r="10"
-              stroke="currentColor"
-              strokeWidth="4"
-            ></circle>
-            <path
-              className="opacity-75"
-              fill="currentColor"
-              d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-            ></path>
-          </svg>
+        <div className="flex justify-center items-center py-16">
+          <motion.div
+            animate={{ rotate: 360 }}
+            transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+            className="h-16 w-16 border-4 border-indigo-500 border-t-transparent rounded-full"
+          />
         </div>
       ) : userEvents?.length === 0 ? (
         <motion.div
-          className="text-center py-12"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
+          className="text-center py-16 bg-gradient-to-br from-white to-indigo-50 rounded-2xl shadow-lg border border-indigo-100"
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
           transition={{ delay: 0.2 }}
         >
-          <div className="bg-gray-200 border-2 border-dashed rounded-xl w-16 h-16 mx-auto mb-4" />
-          <h3 className="text-2xl font-semibold text-gray-700 mb-2">
-            No events created yet
-          </h3>
-          <p className="text-gray-500 mb-6">
-            Get started by creating your first event
-          </p>
-          <motion.button
-            className="bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 px-6 rounded-full transition duration-300"
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
+          <motion.div
+            className="bg-gradient-to-r from-indigo-100 to-purple-100 border-2 border-dashed border-indigo-300 rounded-2xl w-24 h-24 mx-auto mb-6 flex items-center justify-center"
+            whileHover={{ rotate: 10, scale: 1.1 }}
+            transition={{ type: "spring", stiffness: 300 }}
           >
-            Create Your First Event
-          </motion.button>
+            <svg
+              className="h-12 w-12 text-indigo-500"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M12 9v3m0 0v3m0-3h3m-3 0H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z"
+              />
+            </svg>
+          </motion.div>
+          <h3 className="text-3xl font-bold text-gray-800 mb-3">
+            No Events Created Yet
+          </h3>
+          <p className="text-gray-600 text-lg max-w-md mx-auto mb-8">
+            Get started by creating your first event and share it with the
+            community.
+          </p>
+          <Link href="/create-event">
+            <motion.button
+              className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-bold py-3 px-8 rounded-xl hover:from-indigo-700 hover:to-purple-700 transition-all duration-300 shadow-lg hover:shadow-xl"
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+            >
+              Create Your First Event
+            </motion.button>
+          </Link>
         </motion.div>
       ) : (
         <motion.div
-          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
+          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8"
           variants={container}
           initial="hidden"
           animate="show"
         >
-          {userEvents?.map((event) => (
+          {userEvents?.map((event, index) => (
             <motion.div
               key={event.id}
               variants={item}
-              whileHover={{ y: -5 }}
-              className="bg-white rounded-xl shadow-lg overflow-hidden transition-all duration-300 hover:shadow-xl"
+              whileHover={{
+                y: -10,
+                scale: 1.03,
+                transition: { duration: 0.3 },
+              }}
+              className="bg-white rounded-2xl shadow-xl overflow-hidden transition-all duration-300 hover:shadow-2xl border border-indigo-50"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: index * 0.1 }}
             >
-              <div className="p-5">
+              <div className="p-6">
                 <EventCard event={event} showDelete />
               </div>
-              <div className="px-5 pb-5">
+              <div className="px-6 pb-6">
                 <motion.button
                   onClick={() => setEditingEvent(event)}
-                  className="w-full bg-gradient-to-r from-yellow-400 to-orange-500 text-white font-medium py-2 px-4 rounded-lg hover:from-yellow-500 hover:to-orange-600 transition-all duration-300"
+                  className="w-full bg-gradient-to-r from-yellow-500 to-orange-500 text-white font-bold py-3 px-4 rounded-xl hover:from-yellow-600 hover:to-orange-600 transition-all duration-300 shadow-md hover:shadow-lg transform hover:-translate-y-0.5"
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
                 >
