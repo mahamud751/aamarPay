@@ -13,6 +13,7 @@ import {
   FaSignInAlt,
   FaTimes,
 } from "react-icons/fa";
+import NotificationBell from "@/components/NotificationBell";
 import AuthForm from "@/components/templates/AuthForm";
 
 export default function Header() {
@@ -136,6 +137,12 @@ export default function Header() {
                 </Link>
               </motion.li>
             </>
+          )}
+
+          {user && (
+            <motion.li variants={navItemVariants}>
+              <NotificationBell />
+            </motion.li>
           )}
 
           <motion.li variants={navItemVariants}>

@@ -16,6 +16,7 @@ import {
   rsvpEvent as rsvpEventApi,
   deleteEvent as deleteEventApi,
 } from "@/services/apis/events";
+import { createNotification } from "@/services/apis/notifications";
 import { Event } from "@/services/types/Types";
 import { useAuth } from "@/contexts/hooks/auth";
 
@@ -80,6 +81,25 @@ export const EventsProvider: React.FC<EventsProviderProps> = ({ children }) => {
 
       try {
         const response = await rsvpEventApi(id);
+
+        // Send notification to event creator about the new RSVP
+        const event = events.find((e) => e.id === id);
+        if (
+          event &&
+          user.email &&
+          event.user?.email &&
+          event.user.email !== user.email
+        ) {
+          try {
+            await createNotification({
+              userEmail: event.user.email,
+              message: `${user.name} has RSVP'd to your event: ${event.title}`,
+            });
+          } catch (notificationError) {
+            console.error("Failed to send notification:", notificationError);
+          }
+        }
+
         // Update the event in the state with the new RSVP count
         setEvents((prevEvents) =>
           prevEvents.map((event) => (event.id === id ? response.event : event))
@@ -101,7 +121,7 @@ export const EventsProvider: React.FC<EventsProviderProps> = ({ children }) => {
         }
       }
     },
-    [user]
+    [user, events]
   );
 
   const deleteEvent = useCallback(async (id: string) => {

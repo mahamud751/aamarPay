@@ -7,6 +7,7 @@ import { Category, CreateEventDto, Event } from "@/services/types/Types";
 import { useAuth } from "@/contexts/hooks/auth";
 import { useEvents } from "@/contexts/EventsProviders";
 import { getEvent, updateEvent, createEvent } from "@/services/apis/events";
+import { createNotification } from "@/services/apis/notifications";
 
 interface EventFormProps {
   initialData?: Event | null;
@@ -106,7 +107,20 @@ const EventForm: React.FC<EventFormProps> = ({
         // We fetch user events to get the updated event list
         await fetchEvents(true);
       } else {
-        await createEvent(payload);
+        const response = await createEvent(payload);
+
+        // Send notification to all users about the new event
+        if (user?.email) {
+          try {
+            await createNotification({
+              userEmail: "all",
+              message: `New event created: ${response.event.title} by ${user.name}`,
+            });
+          } catch (notificationError) {
+            console.error("Failed to send notification:", notificationError);
+          }
+        }
+
         MySwal.fire({
           icon: "success",
           title: "Success",
